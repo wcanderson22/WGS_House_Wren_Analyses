@@ -1,1 +1,6 @@
+#I used the program liftoff to annotate the House Wren Genome. Liftoff uses a .GFF file from the reference genome that I used to align the genomes. The line of code was:
 
+liftoff --g GCF_003957565.2 --u unmapped_genes.txt --o wren_liftoff_genes.txt wren_genome.fasta creeper_refence.fasta
+
+#the output file was then subset to different sections of the genome that I was interested in (Z chromosome, putative inversion regions) and then entered into Panther's Gene Ontology 
+#analysis. It is also possible to make a bubble plot out of the panther output.
