@@ -1,1 +1,75 @@
+#Input file just contains each individual ID, the associated population (Eastern, Western, Contact zone), and the lat lon where each 
+#sample was taken.
+
+
+#required packages
+install.packages("ggplot2")
+install.packages("ggmap")
+install.packages("maps")
+install.packages("mapproj")
+install.packages("mapdata")
+install.packages("rgeos")
+install.packages("maptools")
+install.packages("sp")
+install.packages("raster")
+install.packages("rgdal")
+install.packages("dismo")
+install.packages("scatterpie")
+
+#libraries
+library(ggplot2)
+library(ggmap)
+library(maps)
+library(mapproj)
+library(mapdata)
+library(rgeos)
+library(maptools)
+library(sp)
+library(raster)
+library(rgdal)
+library(dismo)
+library(scatterpie)
+
+#read in the data
+alllocs <- read.csv("Masters_mapping_data - Sheet1.csv")
+contlocs <- read.csv("Masters_cont_locs_mapping - Sheet1.csv")
+
+#get the range of the data to know what the bounds of the map should be
+range(alllocs$Lon)
+range(alllocs$Lat)
+
+range(contlocs$Lat)
+range(contlocs$Lon)
+
+#call the base map for the continent wide map
+base = get_map(location=c(-124,28,-70,50), zoom=7, maptype="terrain-background")
+
+map1 = ggmap(base)
+
+#open an svg
+svg(filename="/Users/willanderson/Desktop/Manuscript_code/HOWR_WGS_MS/WGS mapping/Allindv_map.svg",width=11,height=8)
+
+alllocsmap <- map1 + geom_point(data=alllocs, aes(x=Lon, y=Lat, shape=Population, color=Population), cex=3) +
+  scale_color_manual(values = c("black", "red", "blue"), labels = c("Contact", "Eastern", "Western"), name = NULL)
+
+
+print(alllocsmap)
+
+dev.off()
+
+#BCS transect sample locations
+
+#call a base map to the bounds of the contact indv data
+base2 = get_map(location=c(-105.6,39.9,-105,40.15), zoom=10, maptype="terrain-background")
+
+map2 = ggmap(base2)
+
+svg(filename="/Users/willanderson/Desktop/Manuscript_code/HOWR_WGS_MS/WGS mapping/contindv_map.svg",width=11,height=8)
+
+contlocsmap <- map2 + geom_point(data=contlocs, aes(x=Lon, y=Lat, shape=Population, color=Population), cex=4) +
+  scale_color_manual(values = c("Black"), labels = c("Contact"), name = NULL)
+
+print(contlocsmap)
+
+dev.off()
 
