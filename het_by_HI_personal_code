@@ -1,1 +1,56 @@
+#This is a script written by others within the taylor lab. It takes a .012 file created by VCFtools. You need to generate a VCF file with only
+#fixed differences, and then take either the non-reference or reference alleles, so that parental individuals are either all 0s or 2s. This is 
+#important for polarizing the data. You will also need a metadata file that includes individual IDs, population IDs, etc, in the same order
+#as the individuals in the .012 file
+
+
+#You first load ggplot2 and tidyverse for visualization and data manipulation, and then load the .012 file. 
+library(ggplot2)
+library(tidyverse)
+loci <- read.table(file = "complete.non.ref.excl.howr.autosomes.012", header = F)
+
+loci$V1 <- NULL
+loci[loci==-1] <- NA
+
+meta <- read.table("meta.txt", header=T)
+dataset <- cbind(meta, loci)
+
+head(loci)
+
+#calculate hybrid index
+index <- function(x) {(sum(x, na.rm=TRUE) / length(which(!is.na(x))))/2}
+hybrid.index <- apply(dataset[,-(1:2)], 1, index)
+
+#calculate mean heterozygoisty 
+heteroz <- function(x) {length(which(x==1)) / length(which(!is.na(x)))}
+heterozygosity <- apply(dataset[,-(1:2)], 1, heteroz)
+
+index.HO <- as.data.frame(cbind(meta, hybrid.index, heterozygosity))
+
+colors <- c("Gray","Red","Blue")
+
+#plotting with geom_abline. We are outputting the figues to an SVG file
+
+svg(filename="/Users/willanderson/Desktop/Manuscript_code/HOWR_WGS_MS/Figures SVG/triangle_plot.svg",width=11,height=8)
+
+ggplot() +
+  geom_point(data=index.HO, aes(x=hybrid.index, y=heterozygosity, color = PopID), size=7.5, alpha=0.7) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+  geom_abline(intercept = 0, slope = 2, size = 0.5) +
+  geom_abline(intercept = 2, slope = -2, size = 0.5) +
+  ylim(0,1) +
+  scale_color_manual(values=c("Gray", "Red", "Blue"))
+
+
+dev.off()
+
+#plotting with geom_segment
+df <- data.frame(x1=0,x2=.5,y1=0,y2=1,x3=1,x4=.5,y3=0,y4=1)
+
+ggplot() +
+  geom_point(data=index.HO, aes(x=hybrid.index, y=heterozygosity, color = PopID), size=3, alpha=0.7) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black")) +  geom_segment(aes(x = x1, y = y1, xend = x2, yend = y2), data = df) +
+  geom_segment(aes(x = x3, y = y3, xend = x4, yend = y4), data = df)
 
