@@ -1,1 +1,139 @@
+library(plyr)
+library(matrixStats)
+library(ggplot2)
+
+##### PCA #####
+# import the vcf table that was re-coded using --012 option of vcftools. In this case it is the file titled "final_pca_file.012". Ours contains 378 SNPs and 126 individuals.
+
+data = read.table("howr2fst1.012.txt", header = F) 
+
+# import metadata file. This file contains all of the metadata, like population, mtDNA type, etc.
+meta = read.table("meta.txt", header = T) 
+
+# prepare input for PCA
+data$V1 <- NULL
+data[data=="-1"] <- NA
+data <- as.data.frame(t(data))
+
+# PCA function
+do.pca<-function(gmat, write.gcov=FALSE){
+  gmn<-apply(gmat,1,mean, na.rm=T) # creates a vector of means for each row (for each snp, across all samples)
+  gmnmat<-matrix(gmn,nrow=nrow(gmat),ncol=ncol(gmat)) # creates a matrix, which has replicate columns of the above snp means
+  gprime<-gmat-gmnmat ## remove mean. # don't understand why we're doing this. To standardize?
+  
+  gcovarmat<-matrix(NA,nrow=ncol(gmat),ncol=ncol(gmat))
+  for(i in 1:ncol(gmat)){
+    print( c('on this individual:', i) )
+    for(j in i:ncol(gmat)){
+      if (i==j){
+        gcovarmat[i,j]<-cov( gprime[,i],gprime[,j] , use="pairwise.complete.obs")
+      }
+      else{
+        gcovarmat[i,j]<-cov( gprime[,i],gprime[,j] , use="pairwise.complete.obs")
+        gcovarmat[j,i]<-gcovarmat[i,j]
+      }
+    }
+  }
+  gcovarmat 
+  #prcomp(x=gcovarmat,center=TRUE,scale=FALSE)
+}
+
+# run the PCA
+gcovarmat = do.pca(data, write.gcov=F ) 
+colRanges(gcovarmat) # checking for NAs
+pca.results = prcomp( gcovarmat ) 
+pcaOut = as.data.frame(cbind(pca.results$x[,1], pca.results$x[,2]))
+pcaData = cbind(meta$IndID, meta$PopID, pcaOut)
+names(pcaData) = c("IndID", "PopID", "PC1", "PC2")
+status=pcaData$status
+write.table(pcaData, "House.Wren.all.pca.output.txt", sep="\t", quote=F, row.names = F, col.names = T)
+summary(pca.results)
+
+# PCA plot 
+
+svg(filename="/Users/willanderson/Desktop/Manuscript_code/HOWR_WGS_MS/Figures SVG/Z_chrom_PCA.svg",width=11,height=8)
+
+ggplot(data=pcaData, aes(x=PC1, y=PC2)) + 
+  geom_point(aes(fill = PopID, stroke=1),
+             size=5, 
+             alpha=0.8,
+             shape = 21) +
+  xlab("PC1, 98.67%") +
+  ylab("PC2, 1.114%") +
+  ggtitle("Principal Component Analysis with 2868 fixed SNPs")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+  scale_color_manual(values = c("Red", "Black", "Blue")) +
+  scale_fill_manual(values = c("Gray", "Red", "Blue"))
+
+dev.off()
+
+
+
+
+
+###Z inversion 1 PCA
+
+data = read.table("zinversion1.012", header = F) 
+
+# import metadata file. This file contains all of the metadata, like population, mtDNA type, etc.
+meta = read.table("meta.txt", header = T) 
+
+# prepare input for PCA
+data$V1 <- NULL
+data[data=="-1"] <- NA
+data <- as.data.frame(t(data))
+
+# PCA function
+do.pca<-function(gmat, write.gcov=FALSE){
+  gmn<-apply(gmat,1,mean, na.rm=T) # creates a vector of means for each row (for each snp, across all samples)
+  gmnmat<-matrix(gmn,nrow=nrow(gmat),ncol=ncol(gmat)) # creates a matrix, which has replicate columns of the above snp means
+  gprime<-gmat-gmnmat ## remove mean. # don't understand why we're doing this. To standardize?
+  
+  gcovarmat<-matrix(NA,nrow=ncol(gmat),ncol=ncol(gmat))
+  for(i in 1:ncol(gmat)){
+    print( c('on this individual:', i) )
+    for(j in i:ncol(gmat)){
+      if (i==j){
+        gcovarmat[i,j]<-cov( gprime[,i],gprime[,j] , use="pairwise.complete.obs")
+      }
+      else{
+        gcovarmat[i,j]<-cov( gprime[,i],gprime[,j] , use="pairwise.complete.obs")
+        gcovarmat[j,i]<-gcovarmat[i,j]
+      }
+    }
+  }
+  gcovarmat 
+  #prcomp(x=gcovarmat,center=TRUE,scale=FALSE)
+}
+
+# run the PCA
+gcovarmat = do.pca(data, write.gcov=F ) 
+colRanges(gcovarmat) # checking for NAs
+pca.results = prcomp( gcovarmat ) 
+pcaOut = as.data.frame(cbind(pca.results$x[,1], pca.results$x[,2]))
+pcaData = cbind(meta$IndID, meta$PopID, pcaOut)
+names(pcaData) = c("IndID", "PopID", "PC1", "PC2")
+status=pcaData$status
+write.table(pcaData, "House.Wren.all.pca.output.txt", sep="\t", quote=F, row.names = F, col.names = T)
+summary(pca.results)
+
+# PCA plot 
+
+svg(filename="/Users/willanderson/Desktop/Manuscript_code/HOWR_WGS_MS/Figures SVG/Z_chrom_PCA.svg",width=11,height=8)
+
+ggplot(data=pcaData, aes(x=PC1, y=PC2)) + 
+  geom_point(aes(fill = PopID, stroke=1),
+             size=5, 
+             alpha=0.8,
+             shape = 21) +
+  xlab("PC1, 81.32%") +
+  ylab("PC2, 13.04%") +
+  ggtitle("Principal Component Analysis of the Z chromosome with 126,412 informative SNPs")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+  scale_color_manual(values = c("Red", "Black", "Blue")) +
+  scale_fill_manual(values = c("Gray", "Red", "Blue"))
+
+dev.off()
 
